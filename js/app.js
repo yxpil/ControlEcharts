@@ -159,6 +159,10 @@
     chartType: 'bar',
     dataset: D.blank(),
     cfg: {},
+    // 各图表类型的专属配置项按类型分开存放，避免同名键（lineWidth / symbolSize /
+    // barMaxWidth / pieInner …）在类型之间互相覆盖
+    typeCfg: {},
+    cfgType: null,
     colors: {
       mode: 'mono',
       monoBase: 'blue',
@@ -198,23 +202,96 @@
     return o;
   }
 
+  /* ============================================================
+     专属配置项的作用域
+     ------------------------------------------------------------
+     每类图表的 extra 键（环形图的 pieInner、折线图的 lineWidth 等）只允许在
+     对应类型下生效。若把所有类型的专属键全局合并，同名键会互相覆盖：
+     默认值取「注册顺序里最后一个类型」，并且面板显示值与实际渲染值不一致，
+     最典型的表现就是普通饼图读到环形图的 pieInner 而被挖出中孔。
+     ============================================================ */
+  let EXTRA_KEY_MAP = null;
+  /** 真正的「类型专属键」：出现在某类型 extra 里、且不在通用 Schema 中的键。
+      通用键（lineWidth / symbolSize / barMaxWidth …）对所有类型都合法，不参与收敛。 */
+  function allExtraKeys() {
+    if (!EXTRA_KEY_MAP) {
+      const base = baseDefaults();
+      EXTRA_KEY_MAP = {};
+      CT.list.forEach((def) => (def.extra || []).forEach((it) => {
+        if (base[it.key] === undefined) EXTRA_KEY_MAP[it.key] = true;
+      }));
+    }
+    return EXTRA_KEY_MAP;
+  }
+
+  function extraKeysOf(typeId) {
+    const def = CT.map[typeId];
+    return (def && def.extra ? def.extra : []).map((it) => it.key);
+  }
+
+  function stashOf(typeId) {
+    if (!state.typeCfg[typeId]) state.typeCfg[typeId] = {};
+    return state.typeCfg[typeId];
+  }
+
+  /** 把 state.cfg 收敛为「通用键 + 当前类型的专属键」，专属值按类型分别暂存 */
+  function syncTypeExtras() {
+    const id = state.chartType;
+    if (!CT.map[id]) return;
+    if (state.cfgType === id) return;
+
+    const all = allExtraKeys();
+    const own = extraKeysOf(id);
+    const ownMap = {};
+    own.forEach((k) => { ownMap[k] = true; });
+    const stash = stashOf(id);
+    const prevId = state.cfgType;
+
+    // 首次同步（含旧版本存储）：cfg 中已有的专属值视为属于当前类型
+    if (!prevId || !CT.map[prevId]) {
+      own.forEach((k) => { if (state.cfg[k] !== undefined) stash[k] = state.cfg[k]; });
+    } else if (prevId !== id) {
+      // 换出上一个类型的专属值
+      const prev = stashOf(prevId);
+      extraKeysOf(prevId).forEach((k) => {
+        if (state.cfg[k] !== undefined) prev[k] = state.cfg[k];
+      });
+    }
+
+    // 清掉所有不属于当前类型的专属键，再装载当前类型的值
+    Object.keys(all).forEach((k) => { if (!ownMap[k]) delete state.cfg[k]; });
+    const defs = typeDefaults(CT.map[id]);
+    const preset = CT.map[id].preset || {};
+    own.forEach((k) => {
+      if (stash[k] !== undefined) state.cfg[k] = stash[k];
+      else if (preset[k] !== undefined) state.cfg[k] = preset[k];
+      else state.cfg[k] = defs[k];
+    });
+    state.cfgType = id;
+  }
+
   function currentDefaults() {
     const o = baseDefaults();
     Object.assign(o, typeDefaults(CT.map[state.chartType]));
     return o;
   }
 
-  /** 补齐缺失键，不覆盖已有用户设置 */
+  /** 补齐缺失键，不覆盖已有用户设置（专属键由 syncTypeExtras 装载） */
   function ensureCfg() {
-    const d = allDefaults();
+    const d = baseDefaults();
     Object.keys(d).forEach((k) => {
       if (state.cfg[k] === undefined) state.cfg[k] = d[k];
     });
+    syncTypeExtras();
   }
 
   function applyPreset(def) {
     if (!def || !def.preset) return;
-    Object.assign(state.cfg, def.preset);
+    const stash = state.typeCfg[def.id] || {};
+    Object.keys(def.preset).forEach((k) => {
+      if (stash[k] !== undefined) return; // 用户调过的专属项不被预设覆盖
+      state.cfg[k] = def.preset[k];
+    });
   }
 
   /* ============================================================
@@ -261,6 +338,7 @@
      渲染图表
      ============================================================ */
   function render() {
+    syncTypeExtras();
     const def = CT.map[state.chartType];
     const ds = state.dataset;
     const empty = !ds || !ds.columns.length || !ds.rows.length;
@@ -360,6 +438,7 @@
   }
 
   function renderConfig() {
+    syncTypeExtras();
     const panel = document.getElementById('config-panel');
     if (!panel) return;
     const def = CT.map[state.chartType];
@@ -420,6 +499,8 @@
     currentDefaults: currentDefaults,
     ensureCfg: ensureCfg,
     applyPreset: applyPreset,
+    syncTypeExtras: syncTypeExtras,
+    extraKeysOf: extraKeysOf,
     colorCount: colorCount,
     buildCtx: buildCtx,
     render: render,

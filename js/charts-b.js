@@ -16,9 +16,10 @@
     if (!pairs.length) return null;
     const T = ctx.T;
 
+    // pieInner 是环形图的专属配置项。配置默认值会把所有类型的专属键全局填充，
+    // 若不做模式收窄，普通饼图与玫瑰图也会被挖出中孔，外观与环形图完全重复。
     let inner = 0;
     if (mode === 'doughnut') inner = cfg.pieInner === undefined ? 52 : Number(cfg.pieInner);
-    else if (cfg.pieInner) inner = Number(cfg.pieInner);
 
     const center = [
       C.pct(cfg.pieCenterX, '50%'),
@@ -26,14 +27,16 @@
     ];
 
     let outer = cfg.pieOuter === undefined ? 74 : Number(cfg.pieOuter);
-    // 圆心越偏离正中，可用空间越少：自动收缩外半径，保证扇区与外部标签不被画布裁切
+    // 圆心越偏离正中，可用空间越少：自动收缩外半径，保证扇区与外部标签不被画布裁切。
+    // 半径百分比以 min(w,h)/2 为 100%，须换算成「占容器高度的百分比」再与可用余量比较。
     const cyN = parseFloat(center[1]) / 100;
     if (Number.isFinite(cyN) && ctx && ctx.w && ctx.h) {
-      const halfH = outer * Math.min(ctx.w, ctx.h) / (2 * ctx.h); // 纵向半高 / 容器高度
-      const room = Math.min(cyN, 1 - cyN) - 0.04;                 // 预留 4% 给外部标签
-      if (room > 0 && halfH > room) outer = outer * room / halfH;
+      const halfPct = outer * Math.min(ctx.w, ctx.h) / (2 * ctx.h); // 纵向半高（百分比数值）
+      const roomPct = (Math.min(cyN, 1 - cyN) - 0.04) * 100;        // 可用纵向余量，预留 4% 给外部标签
+      if (roomPct > 0 && halfPct > roomPct) outer = outer * roomPct / halfPct;
     }
-    outer = Math.max(inner + 6, Math.min(96, outer));
+    outer = Math.max(20, Math.min(96, outer));
+    inner = Math.min(inner, Math.max(0, outer - 10)); // 环形厚度至少保留 10%
 
     const o = C.base(cfg, ctx);
     o.tooltip = C.buildTooltip(cfg, ctx, { trigger: 'item', pointer: 'none' });
@@ -277,7 +280,10 @@
     shape: '双数值列',
     hint: '带扩散动效的高亮散点，适合重点标注。',
     preset: { labelShow: false },
-    extra: [{ key: 'symbolSize', label: '散点大小', type: 'range', min: 4, max: 40, step: 1, unit: 'px', def: 11 }],
+    extra: [
+      { key: 'symbolSize', label: '散点大小', type: 'range', min: 4, max: 40, step: 1, unit: 'px', def: 11 },
+      { key: 'scatterOpacity', label: '不透明度', type: 'range', min: 20, max: 100, step: 2, unit: '%', def: 84 }
+    ],
     build: function (ds, cfg, ctx) { return buildScatter(ds, cfg, ctx, 'effect'); }
   });
 

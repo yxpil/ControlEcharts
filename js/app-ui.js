@@ -269,6 +269,8 @@
         }
         if (obj && obj.dataset && obj.dataset.columns) {
           if (obj.cfg) Object.assign(S.cfg, obj.cfg);
+          if (obj.typeCfg && typeof obj.typeCfg === 'object') S.typeCfg = obj.typeCfg;
+          S.cfgType = null; // 强制重新收敛专属键
           if (obj.colors) Object.assign(S.colors, obj.colors);
           if (obj.chartType && CT.map[obj.chartType]) S.chartType = obj.chartType;
           if (obj.theme) applyTheme(obj.theme);
@@ -448,6 +450,7 @@
       renderer: S.renderer,
       dataset: S.dataset,
       cfg: S.cfg,
+      typeCfg: S.typeCfg,
       colors: S.colors
     };
     download(safeName() + '.json', JSON.stringify(payload, null, 2), 'application/json');
@@ -472,6 +475,7 @@
           chartType: S.chartType,
           dataset: S.dataset,
           cfg: S.cfg,
+          typeCfg: S.typeCfg,
           colors: S.colors,
           theme: S.theme,
           renderer: S.renderer,
@@ -490,6 +494,8 @@
       if (!o || !o.dataset || !o.dataset.columns) return false;
       S.dataset = o.dataset;
       if (o.cfg) Object.assign(S.cfg, o.cfg);
+      if (o.typeCfg && typeof o.typeCfg === 'object') S.typeCfg = o.typeCfg;
+      S.cfgType = null; // 强制首次同步重新收敛专属键
       if (o.colors) Object.assign(S.colors, o.colors);
       if (o.chartType && CT.map[o.chartType]) S.chartType = o.chartType;
       S.theme = o.theme === 'light' ? 'light' : 'dark';

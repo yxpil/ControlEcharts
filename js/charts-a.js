@@ -80,6 +80,20 @@
     return dz;
   }
 
+  /* 柱状家族共用：buildBar 会读取这些键，必须在家族内统一声明。
+     若某个类型漏声明，它就会去读别的类型写进配置里的同名值，造成
+     各柱状图取值不一致（同名键互相覆盖是历史遗留问题）。 */
+  const EXTRA_BAR_WIDTH = [
+    { key: 'barWidth', label: '柱宽度', type: 'range', min: 10, max: 100, step: 2, unit: '%', def: 46 },
+    { key: 'barCategoryGap', label: '分类间距', type: 'range', min: 0, max: 90, step: 2, unit: '%', def: 42 }
+  ];
+  const EXTRA_BAR_GAP = [
+    { key: 'barGap', label: '系列间距', type: 'range', min: 0, max: 120, step: 2, unit: '%', def: 18 }
+  ];
+  const EXTRA_BAR_INVERT = [
+    { key: 'inverseAxis', label: '反转分类顺序', type: 'switch', def: false }
+  ];
+
   register({
     id: 'bar',
     name: '柱状图',
@@ -88,7 +102,7 @@
     shape: '分类 + 多系列',
     hint: '首列为分类，其余数值列各成一系列。',
     preset: { stack: false },
-    extra: [{ key: 'barWidth', label: '柱宽度', type: 'range', min: 10, max: 100, step: 2, unit: '%', def: 46 }],
+    extra: EXTRA_BAR_WIDTH.concat(EXTRA_BAR_GAP),
     build: function (ds, cfg, ctx) { return buildBar(ds, cfg, ctx, cfg.stack ? 'stack' : 'group'); }
   });
 
@@ -100,10 +114,7 @@
     shape: '分类 + 多系列',
     hint: '多个系列并排显示，便于同组横向比较。',
     preset: { stack: false },
-    extra: [
-      { key: 'barGap', label: '系列间距', type: 'range', min: 0, max: 120, step: 2, unit: '%', def: 18 },
-      { key: 'barCategoryGap', label: '分类间距', type: 'range', min: 0, max: 90, step: 2, unit: '%', def: 42 }
-    ],
+    extra: EXTRA_BAR_WIDTH.concat(EXTRA_BAR_GAP),
     build: function (ds, cfg, ctx) { return buildBar(ds, cfg, ctx, 'group'); }
   });
 
@@ -115,7 +126,7 @@
     shape: '分类 + 多系列',
     hint: '各系列在同一柱体内累加，强调总量与构成。',
     preset: { stack: true },
-    extra: [{ key: 'barMaxWidth', label: '柱最大宽度', type: 'range', min: 12, max: 90, step: 2, unit: 'px', def: 42 }],
+    extra: EXTRA_BAR_WIDTH,
     build: function (ds, cfg, ctx) { return buildBar(ds, cfg, ctx, 'stack'); }
   });
 
@@ -127,7 +138,7 @@
     shape: '分类 + 多系列',
     hint: '横向排列，适合分类名称较长的场景。',
     preset: { labelPos: 'right' },
-    extra: [{ key: 'inverseAxis', label: '反转分类顺序', type: 'switch', def: false }],
+    extra: EXTRA_BAR_WIDTH.concat(EXTRA_BAR_GAP, EXTRA_BAR_INVERT),
     build: function (ds, cfg, ctx) { return buildBar(ds, cfg, ctx, 'horizontal'); }
   });
 
@@ -139,6 +150,7 @@
     shape: '分类 + 多系列',
     hint: '横向堆叠，兼顾长分类名与构成分析。',
     preset: { labelPos: 'insideRight' },
+    extra: EXTRA_BAR_WIDTH.concat(EXTRA_BAR_INVERT),
     build: function (ds, cfg, ctx) { return buildBar(ds, cfg, ctx, 'stack-h'); }
   });
 
@@ -402,10 +414,7 @@
     shape: '分类 + 多系列',
     hint: '展示指标随时间或有序维度的变化趋势。',
     preset: { smooth: false, area: false, stack: false, showSymbol: true },
-    extra: [
-      { key: 'lineWidth', label: '线宽', type: 'range', min: 1, max: 8, step: 0.2, unit: 'px', def: 2.4 },
-      { key: 'symbolSize', label: '拐点大小', type: 'range', min: 0, max: 16, step: 1, unit: 'px', def: 6 }
-    ],
+    // 线宽 / 拐点大小已在「图形样式」通用分组中提供，此处不再重复声明
     build: function (ds, cfg, ctx) { return buildLine(ds, cfg, ctx, cfg.smooth ? 'smooth' : 'plain'); }
   });
 
@@ -463,7 +472,10 @@
     shape: '分类 + 多系列',
     hint: '环形坐标上的趋势线，适合周期性数据。',
     preset: {},
-    extra: [{ key: 'polarRadius', label: '半径', type: 'range', min: 40, max: 88, step: 1, unit: '%', def: 68 }],
+    extra: [
+      { key: 'polarRadius', label: '半径', type: 'range', min: 40, max: 88, step: 1, unit: '%', def: 68 },
+      { key: 'areaOpacity', label: '填充不透明度', type: 'range', min: 5, max: 100, step: 1, unit: '%', def: 18 }
+    ],
     build: function (ds, cfg, ctx) {
       const cs = C.catSeries(ds);
       if (!cs.series.length) return null;
