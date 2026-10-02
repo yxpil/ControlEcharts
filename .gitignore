@@ -13,3 +13,6 @@ desktop.ini
 # 依赖与构建产物（本项目无构建，仅作防御性声明）
 node_modules/
 dist/
+
+# 冒烟测试生成的临时截图
+/preview-*.png
