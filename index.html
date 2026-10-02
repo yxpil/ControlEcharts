@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ControlEcharts · 统计图表制作工作台</title>
+<meta name="description" content="基于 Tailwind CSS 与 Apache ECharts 的统计图表制作工具，支持手动录入数据与 CSV 导入，内置 30+ 图表类型与单色 / 多色配色方案。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%233b82f6'/%3E%3Cg fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M6 18V11M12 18V6M18 18V14'/%3E%3C/g%3E%3C/svg%3E">
+<script src="vendor/tailwind.js"></script>
+<script>
+  if (window.tailwind) {
+    window.tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'PingFang SC', 'Microsoft YaHei', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'SFMono-Regular', 'Consolas', 'monospace']
+          }
+        }
+      }
+    };
+  }
+</script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ===================== 图标库（纯 SVG，无 emoji） ===================== -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><defs>
+  <g id="ic-stroke"></g>
+
+  <symbol id="i-bar" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4.6" height="9"/><rect x="9.7" y="6" width="4.6" height="15"/><rect x="16.4" y="14.5" width="4.6" height="6.5"/></g></symbol>
+  <symbol id="i-bar-group" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="3.4" height="8"/><rect x="7" y="8" width="3.4" height="13"/><rect x="13.6" y="15" width="3.4" height="6"/><rect x="17.6" y="10" width="3.4" height="11"/></g></symbol>
+  <symbol id="i-bar-stack" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="14" width="5" height="7"/><rect x="3" y="8" width="5" height="5"/><rect x="10" y="16" width="5" height="5"/><rect x="10" y="9" width="5" height="6"/><rect x="17" y="12" width="5" height="9"/><rect x="17" y="7" width="5" height="4"/></g></symbol>
+  <symbol id="i-bar-h" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="11" height="4.6"/><rect x="3" y="9.7" width="17" height="4.6"/><rect x="3" y="15.4" width="7.5" height="4.6"/></g></symbol>
+  <symbol id="i-bar-stack-h" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="7" height="4"/><rect x="10" y="4" width="8" height="4"/><rect x="3" y="10" width="12" height="4"/><rect x="15" y="10" width="5" height="4"/><rect x="3" y="16" width="6" height="4"/><rect x="9" y="16" width="4" height="4"/></g></symbol>
+  <symbol id="i-waterfall" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h4.5M8.5 8v9M8.5 12h5M14.5 12v5M14.5 9h5M20.5 9v10"/><path d="M3 20h18"/></g></symbol>
+  <symbol id="i-bar-polar" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.9 2.9M15.5 15.5l2.9 2.9M18.4 5.6l-2.9 2.9M8.5 15.5l-2.9 2.9"/></g></symbol>
+  <symbol id="i-line" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17.5l4.5-5.5 4 3.5L20 5"/><circle cx="7.5" cy="12" r="1.3"/><circle cx="11.5" cy="15.5" r="1.3"/></g></symbol>
+  <symbol id="i-line-smooth" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 17c3.5 0 4.5-9 8-9s4.5 6.5 10 6.5"/><circle cx="3" cy="17" r="1.3"/><circle cx="21" cy="14.5" r="1.3"/></g></symbol>
+  <symbol id="i-line-area" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15l5-6 4.5 4L20 5"/><path d="M3 15v5h17v-5" opacity=".55"/></g></symbol>
+  <symbol id="i-line-stack" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20v-4l5-3 4 2.5 9-6v10.5z"/><path d="M3 15.5l5-4 4 3 9-7" opacity=".6"/></g></symbol>
+  <symbol id="i-line-step" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h4v-5h5V8h5V4h4"/></g></symbol>
+  <symbol id="i-line-polar" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5" opacity=".5"/><path d="M12 3l3 4.4-2.2 4.6 3.6 3.2-1.6 5.6-3.4-3.6-4.2 1.6.6-4.8-3.4-2.8 4.4-1.6z"/></g></symbol>
+  <symbol id="i-pie" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v9h9"/></g></symbol>
+  <symbol id="i-doughnut" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.8"/><path d="M12 3v5.2M21 12h-5.2"/></g></symbol>
+  <symbol id="i-rose" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M12 10V3M12 14v7M14 12h7M10 12H3M13.4 10.6l5-5M10.6 13.4l-5 5M13.4 13.4l5 5M10.6 10.6l-5-5"/></g></symbol>
+  <symbol id="i-scatter" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="6" cy="16" r="1.9"/><circle cx="11" cy="9" r="1.9"/><circle cx="16" cy="14" r="1.9"/><circle cx="19" cy="6" r="1.9"/><circle cx="9" cy="19" r="1.9"/></g></symbol>
+  <symbol id="i-bubble" viewBox="0 0 24 24"><g fill="currentColor" opacity=".85"><circle cx="8" cy="15" r="4.4"/><circle cx="17" cy="9" r="2.6"/><circle cx="18.5" cy="17" r="1.7"/></g></symbol>
+  <symbol id="i-effect-scatter" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6.5" opacity=".6"/><circle cx="12" cy="12" r="9.5" opacity=".3"/></g></symbol>
+  <symbol id="i-boxplot" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 3v3M12 18v3"/><rect x="5" y="6" width="14" height="12" rx="1"/><path d="M5 12h14"/></g></symbol>
+  <symbol id="i-candlestick" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 4v3M7 15v5M17 3v4M17 16v5"/><rect x="4.6" y="7" width="4.8" height="8"/><rect x="14.6" y="7" width="4.8" height="9"/></g></symbol>
+  <symbol id="i-heatmap" viewBox="0 0 24 24"><g fill="currentColor"><rect x="3" y="3" width="5" height="5" opacity=".25"/><rect x="9.5" y="3" width="5" height="5" opacity=".55"/><rect x="16" y="3" width="5" height="5" opacity=".85"/><rect x="3" y="9.5" width="5" height="5" opacity=".7"/><rect x="9.5" y="9.5" width="5" height="5" opacity=".4"/><rect x="16" y="9.5" width="5" height="5" opacity=".95"/><rect x="3" y="16" width="5" height="5" opacity=".35"/><rect x="9.5" y="16" width="5" height="5" opacity=".75"/><rect x="16" y="16" width="5" height="5" opacity=".5"/></g></symbol>
+  <symbol id="i-treemap" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="1.5"/><path d="M13 3v18M13 9h8M13 15h8"/></g></symbol>
+  <symbol id="i-sunburst" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="11"/><path d="M12 1v11M23 12H12M12 23V12M1 12h11"/></g></symbol>
+  <symbol id="i-parallel" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 3v18M10 3v18M16 3v18M22 3v18" opacity=".65"/><path d="M4 8l6 7 6-10 6 6"/></g></symbol>
+  <symbol id="i-sankey" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4v16M20 4v16"/><path d="M4 8c5 0 5 6 10 6M14 14h6M4 11c5 0 6-4 10-4M14 7h6M4 15.5c6 0 6 3.5 10 3.5M14 19h6" opacity=".8"/></g></symbol>
+  <symbol id="i-graph" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="6" r="2.4"/><circle cx="19" cy="6" r="2.4"/><circle cx="6.5" cy="18.5" r="2.4"/><circle cx="18" cy="17.5" r="2.4"/><path d="M7.4 6h9.2M5.8 8.3l.7 7.8M18.6 8.3l-.5 6.7M8.8 18.2h6.8M7 8.5l9.4 8"/></g></symbol>
+  <symbol id="i-theme-river" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8c6 0 8-4 12-3s8 1 8 1"/><path d="M2 14c6 0 8-4 12-3s8 1 8 1" opacity=".7"/><path d="M2 20c6 0 8-4 12-3s8 1 8 1" opacity=".4"/></g></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3.5 18a9 9 0 1 1 17 0"/><path d="M12 18l5-6"/><circle cx="12" cy="18" r="1.4"/></g></symbol>
+  <symbol id="i-funnel" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 4h19l-4 4.5H6.5z"/><path d="M6.5 8.5h11l-3 4.4H9.5z"/><path d="M9.5 12.9h5l-2 4.4h-1z"/><path d="M11.3 17.3h1.4v3.4h-1.4z"/></g></symbol>
+  <symbol id="i-radar" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 2.5l8.2 6-3.2 9.6H7l-3.2-9.6z"/><path d="M12 7l4 3-1.6 4.6H9.6L8 10z" opacity=".65"/></g></symbol>
+  <symbol id="i-pictorial" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20V7a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v13"/><path d="M15 20v-8a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v8"/><path d="M3 20h18"/></g></symbol>
+  <symbol id="i-wordcloud" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2.5" y="4" width="19" height="16" rx="2"/><path d="M6 9h5M14 9h4M6 13h9M6 16.5h6M15.5 13h2.5"/></g></symbol>
+  <symbol id="i-combo" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><rect x="4.5" y="12" width="4.4" height="8"/><rect x="12" y="14" width="4.4" height="6"/><path d="M4 8.5l5-3.5 5 3 5.5-4.5"/><circle cx="14" cy="8" r="1.2"/></g></symbol>
+  <symbol id="i-histogram" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M3 20h18"/><rect x="3.5" y="14" width="3.6" height="6"/><rect x="7.1" y="9" width="3.6" height="11"/><rect x="10.7" y="5" width="3.6" height="15"/><rect x="14.3" y="8" width="3.6" height="12"/><rect x="17.9" y="13" width="3.6" height="7"/></g></symbol>
+  <symbol id="i-pareto" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><rect x="4" y="11" width="4" height="9"/><rect x="9.5" y="8" width="4" height="12"/><rect x="15" y="13" width="4" height="7"/><path d="M4 8l6-4 6 2 5-4" opacity=".95"/></g></symbol>
+  <symbol id="i-tree" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2.5" y="9.5" width="4.5" height="5" rx="1"/><rect x="17" y="3" width="4.5" height="5" rx="1"/><rect x="17" y="16" width="4.5" height="5" rx="1"/><path d="M7 12h4M11 12V5.5h6M11 12v8.5h6"/></g></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 3v4M16 3v4"/><g fill="currentColor" stroke="none"><rect x="6" y="12" width="2.6" height="2.6" rx=".6" opacity=".35"/><rect x="10.7" y="12" width="2.6" height="2.6" rx=".6" opacity=".85"/><rect x="15.4" y="12" width="2.6" height="2.6" rx=".6" opacity=".55"/><rect x="6" y="16" width="2.6" height="2.6" rx=".6" opacity=".7"/><rect x="10.7" y="16" width="2.6" height="2.6" rx=".6" opacity=".4"/><rect x="15.4" y="16" width="2.6" height="2.6" rx=".6" opacity=".95"/></g></g></symbol>
+
+  <symbol id="i-upload" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7.5 8.5L12 4l4.5 4.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></g></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M7.5 11.5L12 16l4.5-4.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></g></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18M3 15h18M9.5 9.5V20"/></g></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></g></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 12h14"/></g></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9.5 7V4.8h5V7M6.5 7l1 13.2h9L17.5 7M10 11v6M14 11v6"/></g></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l-5 6 5 6M15 6l5 6-5 6"/></g></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M4 17l5-4.5 4 3.2 3-2.7 4 4"/></g></symbol>
+  <symbol id="i-shape" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><circle cx="8" cy="8" r="4.5"/><rect x="11" y="11" width="10" height="10" rx="1.5"/><path d="M3 21l4-6 4 6z"/></g></symbol>
+  <symbol id="i-palette" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3a9 9 0 0 0 0 18c1.4 0 2-.9 2-1.9s-.9-1.7-.9-2.6c0-1.1.9-1.9 2-1.9h2.1A4.8 4.8 0 0 0 22 9.8C21.6 5.9 17.4 3 12 3z"/><circle cx="7.6" cy="11" r="1.2" fill="currentColor" stroke="none"/><circle cx="11" cy="7.4" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.6" cy="8.6" r="1.2" fill="currentColor" stroke="none"/></g></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.6v3M12 18.4v3M2.6 12h3M18.4 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></g></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16h16"/><path d="M8 16v-5M12 16V8M16 16v-3"/></g></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4.5V10h-5.4"/></g></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" d="M12 .5C5.7.5.5 5.7.5 12c0 5 3.3 9.3 7.8 10.8.6.1.8-.2.8-.6v-2c-3.2.7-3.8-1.4-3.8-1.4-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.7.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.2-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.6 4.7 18.6 5 18.6 5c.6 1.6.2 2.8.1 3.1.8.9 1.2 1.9 1.2 3.2 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.2c0 .3.2.7.8.6 4.5-1.5 7.8-5.8 7.8-10.8C23.5 5.7 18.3.5 12 .5z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.4M12 19.6V22M2 12h2.4M19.6 12H22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></g></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5.5A2.5 2.5 0 0 0 12.5 3H6.5A2.5 2.5 0 0 0 4 5.5v6A2.5 2.5 0 0 0 6.5 14"/></g></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></g></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-11"/></g></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></g></symbol>
+  <symbol id="i-sort" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M7 20l-3.2-3.2M7 20l3.2-3.2M17 20V4M17 4l-3.2 3.2M17 4l3.2 3.2"/></g></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M13.5 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5z"/><path d="M13.5 3v5.5H19"/></g></symbol>
+  <symbol id="i-zoom-in" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.4L21 21M10.5 7.6v5.8M7.6 10.5h5.8"/></g></symbol>
+  <symbol id="i-zoom-out" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.4L21 21M7.6 10.5h5.8"/></g></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 15v5h-5M15 4h5v5M9 20H4v-5"/></g></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4L11.6 6"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3A4.5 4.5 0 0 0 11 19.4L12.4 18"/></g></symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.7 4.6L18.3 9.3l-4.6 1.7L12 15.6l-1.7-4.6L5.7 9.3l4.6-1.7z"/><path d="M18.5 15l.8 2.1 2.2.8-2.2.8-.8 2.1-.8-2.1-2.2-.8 2.2-.8z"/></g></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.2s6 6.4 6 10.2a6 6 0 0 1-12 0C6 9.6 12 3.2 12 3.2z"/></g></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M5 3h11l3 3v15H5z"/><path d="M8.5 3v6h7V3M8.5 21v-6h7v6"/></g></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M3 6.5A2 2 0 0 1 5 4.5h4l2 2.5h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></g></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></g></symbol>
+</defs></svg>
+
+<!-- ===================== 顶部栏 ===================== -->
+<header id="topbar">
+  <div class="brand">
+    <span class="brand-mark">
+      <svg viewBox="0 0 24 24" width="18" height="18"><use href="#i-chart"/></svg>
+    </span>
+    <div class="brand-text">
+      <strong>ControlEcharts</strong>
+      <small>统计图表制作工作台</small>
+    </div>
+  </div>
+
+  <div class="topbar-tools">
+    <button class="btn btn-ghost" id="btn-open-data" title="导入 CSV / JSON 文件">
+      <svg viewBox="0 0 24 24"><use href="#i-upload"/></svg><span>导入文件</span>
+    </button>
+    <button class="btn btn-ghost" id="btn-paste-data" title="粘贴文本数据">
+      <svg viewBox="0 0 24 24"><use href="#i-table"/></svg><span>粘贴数据</span>
+    </button>
+    <button class="btn btn-ghost" id="btn-samples" title="载入示例数据">
+      <svg viewBox="0 0 24 24"><use href="#i-sparkles"/></svg><span>示例数据</span>
+    </button>
+    <span class="sep"></span>
+    <div class="menu-wrap">
+      <button class="btn btn-ghost" id="btn-export" title="导出图表">
+        <svg viewBox="0 0 24 24"><use href="#i-download"/></svg><span>导出</span>
+      </button>
+      <div class="menu" id="menu-export">
+        <button data-export="png"><svg viewBox="0 0 24 24"><use href="#i-image"/></svg>PNG 图片</button>
+        <button data-export="svg"><svg viewBox="0 0 24 24"><use href="#i-shape"/></svg>SVG 矢量图</button>
+        <button data-export="csv"><svg viewBox="0 0 24 24"><use href="#i-table"/></svg>数据 CSV</button>
+        <button data-export="json"><svg viewBox="0 0 24 24"><use href="#i-save"/></svg>工程 JSON</button>
+        <div class="menu-sep"></div>
+        <button data-export="code-html"><svg viewBox="0 0 24 24"><use href="#i-code"/></svg>独立 HTML</button>
+        <button data-export="code-option"><svg viewBox="0 0 24 24"><use href="#i-code"/></svg>ECharts option</button>
+        <button data-export="copy-option"><svg viewBox="0 0 24 24"><use href="#i-copy"/></svg>复制 option</button>
+      </div>
+    </div>
+    <button class="btn btn-ghost" id="btn-project-open" title="打开工程 JSON">
+      <svg viewBox="0 0 24 24"><use href="#i-folder"/></svg><span>打开工程</span>
+    </button>
+    <span class="sep"></span>
+    <button class="btn btn-ghost icon-only" id="btn-theme" title="切换界面主题">
+      <svg viewBox="0 0 24 24"><use href="#i-moon"/></svg>
+    </button>
+    <button class="btn btn-ghost icon-only" id="btn-github" title="在 GitHub 上查看">
+      <svg viewBox="0 0 24 24"><use href="#i-github"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ===================== 主体 ===================== -->
+<div id="shell">
+
+  <!-- 左栏 -->
+  <aside id="left-panel" class="side-panel">
+    <div class="side-tabs">
+      <button class="side-tab active" data-side="types">
+        <svg viewBox="0 0 24 24"><use href="#i-grid"/></svg><span>图表类型</span>
+      </button>
+      <button class="side-tab" data-side="palette">
+        <svg viewBox="0 0 24 24"><use href="#i-palette"/></svg><span>配色方案</span>
+      </button>
+    </div>
+
+    <div class="side-body">
+      <!-- 图表类型 -->
+      <section class="side-pane active" data-pane="types">
+        <div class="pane-search">
+          <svg viewBox="0 0 24 24"><use href="#i-zoom-in"/></svg>
+          <input type="search" id="type-search" placeholder="搜索图表类型">
+        </div>
+        <div id="chart-types"></div>
+      </section>
+
+      <!-- 配色 -->
+      <section class="side-pane" data-pane="palette">
+        <div class="pane-block">
+          <div class="pane-title">色彩模式</div>
+          <div class="seg-toggle" id="color-mode">
+            <button class="active" data-mode="mono">单色</button>
+            <button data-mode="multi">多色</button>
+            <button data-mode="custom">自定义</button>
+          </div>
+        </div>
+
+        <div class="pane-block" data-colorpanel="mono">
+          <div class="pane-title">基础色</div>
+          <div class="swatch-row" id="mono-bases"></div>
+          <label class="field-label" style="margin-top:14px">色阶分布
+            <select id="mono-mode" class="input select">
+              <option value="shade">深色向浅色渐变（推荐）</option>
+              <option value="dark">整体偏深</option>
+              <option value="light">整体偏浅</option>
+              <option value="vivid">高饱和亮彩</option>
+              <option value="grey">灰阶单色</option>
+            </select>
+          </label>
+          <label class="field-label" style="margin-top:10px">单色渐变填充
+            <span class="switch"><input type="checkbox" id="mono-gradient"><i></i></span>
+          </label>
+          <div class="pane-hint">单色模式会基于所选基础色自动生成与数据项数量相等的色阶，适合强调趋势而非分类。</div>
+        </div>
+
+        <div class="pane-block hidden" data-colorpanel="multi">
+          <div class="pane-title">多色方案</div>
+          <div id="multi-list" class="palette-list"></div>
+          <label class="field-label" style="margin-top:14px">序列重复模式
+            <select id="multi-repeat" class="input select">
+              <option value="cycle">循环取色</option>
+              <option value="shuffle">插值扩散</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="pane-block hidden" data-colorpanel="custom">
+          <div class="pane-title">自定义颜色序列</div>
+          <div id="custom-colors" class="custom-colors"></div>
+          <div class="row-actions">
+            <button class="btn btn-soft btn-sm" id="btn-add-color">
+              <svg viewBox="0 0 24 24"><use href="#i-plus"/></svg><span>添加颜色</span>
+            </button>
+            <button class="btn btn-soft btn-sm" id="btn-clear-colors">
+              <svg viewBox="0 0 24 24"><use href="#i-trash"/></svg><span>清空</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="pane-block">
+          <div class="pane-title">色彩微调</div>
+          <label class="field-label">不透明度 <b id="opacity-val">100%</b>
+            <input type="range" id="color-opacity" min="20" max="100" value="100" class="range">
+          </label>
+          <label class="field-label">色彩随机扰动 <b id="jitter-val">0</b>
+            <input type="range" id="color-jitter" min="0" max="40" value="0" class="range">
+          </label>
+          <label class="field-label" style="margin-top:10px">图表背景
+            <select id="chart-bg" class="input select">
+              <option value="transparent">透明</option>
+              <option value="#ffffff">纯白</option>
+              <option value="#0b1120">深空</option>
+              <option value="#f8fafc">浅灰</option>
+              <option value="#f1f5f9">雾灰</option>
+            </select>
+          </label>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <!-- 中栏 -->
+  <main id="center">
+
+    <div id="chart-bar">
+      <div class="chart-bar-left">
+        <span class="chart-badge" id="chart-badge">柱状图</span>
+        <input type="text" id="quick-title" class="input quick-title" placeholder="图表标题">
+        <span class="chart-meta" id="chart-meta"></span>
+      </div>
+      <div class="chart-bar-right">
+        <button class="chip" id="chip-svg" data-toggle="svgRenderer" title="SVG 矢量渲染器">
+          <svg viewBox="0 0 24 24"><use href="#i-shape"/></svg>SVG
+        </button>
+        <button class="chip active" id="chip-label" data-toggle="labelShow" title="显示数据标签">数值标签</button>
+        <button class="chip" id="chip-smooth" data-toggle="smooth" title="平滑曲线">平滑</button>
+        <button class="chip" id="chip-stack" data-toggle="stack" title="堆叠">堆叠</button>
+        <button class="chip" id="chip-legend" data-toggle="legendShow" title="图例">图例</button>
+        <button class="chip" id="chip-zoom" data-toggle="dataZoom" title="缩放">缩放</button>
+        <button class="chip" id="chip-toolbox" data-toggle="toolbox" title="工具盒">工具盒</button>
+        <span class="chip-sep"></span>
+        <button class="chip icon-only" id="btn-expand" title="全屏查看">
+          <svg viewBox="0 0 24 24"><use href="#i-expand"/></svg>
+        </button>
+        <button class="chip icon-only" id="btn-zoom-out" title="缩小">
+          <svg viewBox="0 0 24 24"><use href="#i-zoom-out"/></svg>
+        </button>
+        <button class="chip icon-only" id="btn-zoom-in" title="放大">
+          <svg viewBox="0 0 24 24"><use href="#i-zoom-in"/></svg>
+        </button>
+        <button class="chip icon-only" id="btn-reset" title="重置图表">
+          <svg viewBox="0 0 24 24"><use href="#i-refresh"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="chart-stage">
+      <div id="chart"></div>
+      <div id="drop-hint">
+        <svg viewBox="0 0 24 24"><use href="#i-drop"/></svg>
+        <strong>松开以导入数据文件</strong>
+        <small>支持 .csv / .tsv / .txt / .json</small>
+      </div>
+      <div id="chart-empty" class="hidden">
+        <svg viewBox="0 0 24 24"><use href="#i-chart"/></svg>
+        <strong>暂无数据</strong>
+        <small>在下方表格中录入，或导入 CSV 文件</small>
+      </div>
+    </div>
+
+    <div id="data-dock">
+      <div class="dock-head">
+        <button class="dock-toggle" id="dock-toggle">
+          <svg viewBox="0 0 24 24"><use href="#i-chevron"/></svg>
+          <span>数据编辑器</span>
+        </button>
+        <div class="dock-meta">
+          <span id="data-stat">0 行 x 0 列</span>
+        </div>
+        <div class="dock-tools">
+          <button class="btn btn-soft btn-sm" id="btn-add-row">
+            <svg viewBox="0 0 24 24"><use href="#i-plus"/></svg><span>加行</span>
+          </button>
+          <button class="btn btn-soft btn-sm" id="btn-add-col">
+            <svg viewBox="0 0 24 24"><use href="#i-plus"/></svg><span>加列</span>
+          </button>
+          <button class="btn btn-soft btn-sm" id="btn-transpose">
+            <svg viewBox="0 0 24 24"><use href="#i-sort"/></svg><span>转置</span>
+          </button>
+          <button class="btn btn-soft btn-sm" id="btn-clear-data">
+            <svg viewBox="0 0 24 24"><use href="#i-trash"/></svg><span>清空</span>
+          </button>
+        </div>
+      </div>
+      <div class="dock-body">
+        <div class="table-scroll">
+          <table id="data-table"></table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- 右栏 -->
+  <aside id="right-panel" class="side-panel">
+    <div class="side-head">
+      <svg viewBox="0 0 24 24"><use href="#i-settings"/></svg>
+      <span>图表配置</span>
+      <button class="btn btn-ghost btn-sm" id="btn-reset-config">恢复默认</button>
+    </div>
+    <div class="side-body" id="config-panel"></div>
+  </aside>
+
+</div>
+
+<!-- ===================== 模态框 ===================== -->
+<div class="modal" id="modal-paste">
+  <div class="modal-card wide">
+    <div class="modal-head">
+      <strong>粘贴 / 编辑文本数据</strong>
+      <button class="btn btn-ghost icon-only" data-close><svg viewBox="0 0 24 24"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-row">
+        <label class="field-label" style="flex:1">分隔符
+          <select id="paste-delim" class="input select">
+            <option value="auto">自动识别</option>
+            <option value=",">逗号 ,</option>
+            <option value=";">分号 ;</option>
+            <option value="\t">制表符 Tab</option>
+            <option value="|">竖线 |</option>
+            <option value=" ">空格</option>
+          </select>
+        </label>
+        <label class="field-label" style="flex:1">首行为表头
+          <span class="switch"><input type="checkbox" id="paste-header" checked><i></i></span>
+        </label>
+      </div>
+      <textarea id="paste-area" class="input textarea" spellcheck="false" placeholder="类别,系列A,系列B
+一月,120,200
+二月,180,140
+三月,150,260"></textarea>
+      <div class="modal-note">支持从 Excel / WPS / Google Sheets 直接复制粘贴，也支持 CSV、TSV、分号与竖线分隔的纯文本。</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>取消</button>
+      <button class="btn btn-primary" id="btn-paste-apply">
+        <svg viewBox="0 0 24 24"><use href="#i-check"/></svg><span>导入数据</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-sample">
+  <div class="modal-card">
+    <div class="modal-head">
+      <strong>示例数据集</strong>
+      <button class="btn btn-ghost icon-only" data-close><svg viewBox="0 0 24 24"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div id="sample-list" class="sample-list"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-code">
+  <div class="modal-card wide">
+    <div class="modal-head">
+      <strong id="code-title">ECharts 配置代码</strong>
+      <div class="modal-tabs">
+        <button class="active" data-code="option">option</button>
+        <button data-code="html">独立 HTML</button>
+      </div>
+      <button class="btn btn-ghost icon-only" data-close><svg viewBox="0 0 24 24"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <pre id="code-out" class="code-out"></pre>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>关闭</button>
+      <button class="btn btn-primary" id="btn-copy-code">
+        <svg viewBox="0 0 24 24"><use href="#i-copy"/></svg><span>复制到剪贴板</span>
+      </button>
+      <button class="btn btn-soft" id="btn-download-code">
+        <svg viewBox="0 0 24 24"><use href="#i-download"/></svg><span>下载文件</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<input type="file" id="file-input" accept=".csv,.tsv,.txt,.json,.xls,.xlsx" hidden>
+<input type="file" id="project-input" accept=".json" hidden>
+
+<script src="vendor/echarts.min.js"></script>
+<script src="js/palettes.js"></script>
+<script src="js/data.js"></script>
+<script src="js/chart-core.js"></script>
+<script src="js/charts-a.js"></script>
+<script src="js/charts-b.js"></script>
+<script src="js/charts-c.js"></script>
+<script src="js/app.js"></script>
+<script src="js/app-ui.js"></script>
+</body>
+</html>
