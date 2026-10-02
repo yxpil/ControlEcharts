@@ -323,7 +323,7 @@
       cs.cats.forEach((cat, i) => {
         cs.series.forEach((s) => {
           const v = s.data[i];
-          if (v !== null && v !== undefined) data.push([cat, v, s.name]);
+          if (v !== null && v !== undefined) data.push([i, v, s.name]);
         });
       });
       if (!data.length) return null;
@@ -331,22 +331,36 @@
       const o = C.base(cfg, ctx);
       o.tooltip = C.buildTooltip(cfg, ctx, { trigger: 'axis', pointer: 'line' });
       o.toolbox = C.toolboxOf(cfg, ctx);
-      o.singleAxis = {
+      // ECharts 5.5.1 的 themeRiver 系列在 category 单轴上不渲染流带（value / time 轴正常），
+      // 且默认 value 轴无法定位「1月」这类字符串——因此统一改用 value 轴 + 数值索引定位，
+      // 轴标签与轴指示器通过 formatter 映射回原始分类名
+      const singleAxis = {
+        type: 'value',
+        min: 0,
+        max: cs.cats.length - 1 || 1,
         top: cfg.showTitle === false ? 34 : 76,
         bottom: 44,
         axisTick: { show: false },
         axisLine: { lineStyle: { color: ctx.T.axisLine } },
-        axisLabel: { color: ctx.T.axis, fontSize: C.axisFont(cfg), fontFamily: C.FONT, hideOverlap: true },
-        splitLine: { show: !!cfg.splitLineX, lineStyle: { color: ctx.T.split, type: 'dashed' } }
+        axisLabel: {
+          color: ctx.T.axis, fontSize: C.axisFont(cfg), fontFamily: C.FONT,
+          interval: 0, hideOverlap: true,
+          formatter: (v) => cs.cats[Math.round(v)] || ''
+        },
+        axisPointer: { label: { formatter: (p) => cs.cats[Math.round(p.value)] || '' } }
       };
+      // singleAxis 的 splitLine 在 value 轴上可正常开关（category 轴上 show:false 会使系列
+      // 整体消失，因此轴必须用 value 型）；不输出时 ECharts 默认显示网格
+      singleAxis.splitLine = { show: !!cfg.splitLineX, lineStyle: { color: ctx.T.split, type: 'dashed' } };
+      o.singleAxis = singleAxis;
       o.series = [{
         type: 'themeRiver',
         data: data,
         emphasis: { focus: 'series', itemStyle: { shadowBlur: 18, shadowColor: 'rgba(0,0,0,.35)' } },
         label: { show: !!cfg.labelShow, fontSize: cfg.labelSize || 10, color: ctx.T.text, fontFamily: C.FONT },
-        itemStyle: { opacity: (cfg.riverOpacity === undefined ? 82 : Number(cfg.riverOpacity)) / 100, borderRadius: 2 },
-        color: ctx.colors
+        itemStyle: { opacity: (cfg.riverOpacity === undefined ? 82 : Number(cfg.riverOpacity)) / 100 }
       }];
+      o.__meta = { title: '主题河流 · ' + cs.series.length + ' 条流带 · ' + cs.cats.length + ' 个时间点' };
       return o;
     }
   });
