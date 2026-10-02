@@ -19,7 +19,21 @@
     let inner = 0;
     if (mode === 'doughnut') inner = cfg.pieInner === undefined ? 52 : Number(cfg.pieInner);
     else if (cfg.pieInner) inner = Number(cfg.pieInner);
-    const outer = cfg.pieOuter === undefined ? 74 : Number(cfg.pieOuter);
+
+    const center = [
+      C.pct(cfg.pieCenterX, '50%'),
+      C.pct(cfg.pieCenterY, cfg.showTitle === false ? '50%' : '52%')
+    ];
+
+    let outer = cfg.pieOuter === undefined ? 74 : Number(cfg.pieOuter);
+    // 圆心越偏离正中，可用空间越少：自动收缩外半径，保证扇区与外部标签不被画布裁切
+    const cyN = parseFloat(center[1]) / 100;
+    if (Number.isFinite(cyN) && ctx && ctx.w && ctx.h) {
+      const halfH = outer * Math.min(ctx.w, ctx.h) / (2 * ctx.h); // 纵向半高 / 容器高度
+      const room = Math.min(cyN, 1 - cyN) - 0.04;                 // 预留 4% 给外部标签
+      if (room > 0 && halfH > room) outer = outer * room / halfH;
+    }
+    outer = Math.max(inner + 6, Math.min(96, outer));
 
     const o = C.base(cfg, ctx);
     o.tooltip = C.buildTooltip(cfg, ctx, { trigger: 'item', pointer: 'none' });
@@ -28,7 +42,7 @@
       name: cfg.seriesName || (ds.columns && ds.columns[1]) || '占比',
       type: 'pie',
       radius: inner > 0 ? [inner + '%', outer + '%'] : outer + '%',
-      center: [cfg.pieCenterX || '50%', cfg.pieCenterY || (cfg.showTitle === false ? '54%' : '58%')],
+      center: center,
       roseType: mode === 'rose' ? (cfg.roseType || 'radius') : false,
       avoidLabelOverlap: true,
       padAngle: cfg.padAngle === undefined ? 1.2 : Number(cfg.padAngle),
@@ -76,7 +90,7 @@
 
   const pieExtra = [
     { key: 'pieOuter', label: '外半径', type: 'range', min: 30, max: 92, step: 1, unit: '%', def: 74 },
-    { key: 'pieCenterY', label: '垂直位置', type: 'range', min: 30, max: 78, step: 1, unit: '%', def: 58 },
+    { key: 'pieCenterY', label: '垂直位置', type: 'range', min: 34, max: 70, step: 1, unit: '%', def: 52 },
     { key: 'padAngle', label: '扇区间隙', type: 'range', min: 0, max: 6, step: 0.2, unit: 'deg', def: 1.2 },
     {
       key: 'pieLabelMode', label: '标签内容', type: 'select', def: 'name-percent',

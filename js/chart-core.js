@@ -216,6 +216,17 @@
     return (arr || []).map((v) => Number(v)).filter((v) => Number.isFinite(v));
   }
 
+  /**
+   * 把配置项当百分比使用。
+   * 配置面板的 range 控件写入的是数字（58），而 ECharts 对 center / radius 这类
+   * 参数把裸数字解释为「像素」，必须以 '58%' 形式传入，否则图形会贴着左上角渲染。
+   */
+  function pct(v, fallback) {
+    if (v === undefined || v === null || v === '') return fallback;
+    const s = String(v).trim();
+    return /^-?\d+(\.\d+)?$/.test(s) ? s + '%' : s;
+  }
+
   function quantile(sorted, p) {
     if (!sorted.length) return 0;
     const pos = (sorted.length - 1) * p;
@@ -504,6 +515,7 @@
     matrixData: matrixData,
     scatterData: scatterData,
     toNums: toNums,
+    pct: pct,
     quantile: quantile,
     buildTitle: buildTitle,
     buildLegend: buildLegend,
