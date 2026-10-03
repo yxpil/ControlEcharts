@@ -1,0 +1,10 @@
+{
+  "name": "controlecharts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ECharts 交互式数据可视化工作台",
+  "scripts": {
+    "test": "node --test --test-force-exit tests/"
+  },
+  "license": "MIT"
+}
