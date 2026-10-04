@@ -135,3 +135,15 @@ ChartCore.register({
 ## 许可证
 
 [MIT](LICENSE)
+
+---
+
+<div align="center">
+
+<a href="https://github.com/yxpil/ControlEcharts">
+  <img width="100%" src="https://alittlecatgirlpanel.yxp.hk/card?repo=yxpil/ControlEcharts" alt="gh-card · yxpil/ControlEcharts" />
+</a>
+
+<sub>Powered by <a href="https://alittlecatgirlpanel.yxp.hk"><b>gh-card</b></a> · 粉色手写体 README 仓库名片</sub>
+
+</div>
